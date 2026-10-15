@@ -1,0 +1,15 @@
+﻿__pycache__/
+.pytest_cache/
+*.py[cod]
+*.db
+*.db-*
+.venv/
+venv/
+build/
+dist/
+Output/
+*.exe
+*.dll
+*.pyd
+*.log
+.DS_Store

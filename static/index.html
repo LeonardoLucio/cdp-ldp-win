@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<title>BlackWorks - Análise de Portas Centralizados</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  /* ============================================================
+     DEFINIÇÕES DE PALETAS DE CORES (TEMAS)
+     ============================================================ */
+
+  :root[data-theme="white"] {
+    --bg: #F8FAFC;
+    --card: #FFFFFF;
+    --border: #E2E8F0;
+    --text: #0F172A;
+    --muted: #64748B;
+    --accent: #2563EB;
+    --accent-hover: #1D4ED8;
+    --accent-btn-text: #FFFFFF;
+    --success: #16A34A;
+    --danger: #DC2626;
+    --title-gradient: none;
+    --btn-gradient: #2563EB;
+    --card-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  }
+
+  :root[data-theme="black"] {
+    --bg: #0A0A0A;
+    --card: #121212;
+    --border: #262626;
+    --text: #EDEDED;
+    --muted: #A1A1AA;
+    --accent: #3B82F6;
+    --accent-hover: #60A5FA;
+    --accent-btn-text: #FFFFFF;
+    --success: #22C55E;
+    --danger: #EF4444;
+    --title-gradient: none;
+    --btn-gradient: #2563EB;
+    --card-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+    padding: 24px;
+    transition: background 0.3s ease, color 0.3s ease;
+  }
+
+  .container { max-width: 1300px; margin: 0 auto; }
+  #interfaceSelect { min-width: 300px; }
+  .status-line { padding: 4px 0; overflow-wrap: anywhere; }
+  @media (max-width: 640px) {
+    body { padding: 16px; }
+    .title { font-size: 21px; }
+    .nav-tabs { margin-bottom: 16px; }
+    .tab-btn { flex: 1; padding: 10px 12px; }
+    #interfaceSelect { min-width: 100%; width: 100%; }
+    .toolbar > button, .toolbar > .export-dropdown { flex: 1; }
+    .export-dropdown > button { width: 100%; }
+  }
+
+  /* ============================================================
+     LAYOUT PRINCIPAL
+     ============================================================ */
+  
+  .header { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    margin-bottom: 24px; 
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .title { 
+    font-size: 26px; 
+    font-weight: 800; 
+    letter-spacing: -0.5px;
+    color: var(--text);
+    margin: 0; 
+  }
+
+  .subtitle { color: var(--muted); margin: 6px 0 0; font-size: 14px; }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .theme-selector-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--muted);
+    font-weight: 600;
+  }
+
+  .nav-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 12px;
+  }
+
+  .tab-btn {
+    background: var(--card);
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 22px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .tab-btn:hover { color: var(--text); border-color: var(--accent); }
+  .tab-btn.active {
+    background: var(--btn-gradient);
+    color: var(--accent-btn-text);
+    border-color: transparent;
+    font-weight: 700;
+  }
+
+  select, button {
+    font-family: inherit;
+    font-size: 14px;
+  }
+
+  select {
+    background: var(--card);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    outline: none;
+    transition: border 0.2s ease;
+  }
+
+  select:focus { border-color: var(--accent); }
+
+  button {
+    background: var(--btn-gradient);
+    color: var(--accent-btn-text);
+    border: none;
+    border-radius: 8px;
+    padding: 12px 20px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  button:hover { filter: brightness(0.96); }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  button.danger { 
+    background: #DC2626; 
+    color: #FFFFFF;
+  }
+
+  button.secondary {
+    background: var(--card);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+
+  .toolbar { display: flex; gap: 12px; align-items: center; margin-bottom: 20px; flex-wrap: wrap; }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: var(--card-shadow);
+    transition: background 0.3s ease, border 0.3s ease;
+  }
+
+  .status-line { color: var(--accent); min-height: 20px; margin-bottom: 12px; font-weight: 600; }
+  .device-name { font-size: 24px; font-weight: bold; color: var(--text); margin: 4px 0; }
+  .success-label { color: var(--success); font-weight: bold; display: flex; align-items: center; gap: 6px; }
+
+  .details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    margin-top: 16px;
+  }
+
+  .detail-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+  }
+
+  .detail-card.full-width {
+    grid-column: 1 / -1;
+  }
+
+  .detail-label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .detail-value { font-size: 14px; font-weight: 700; color: var(--text); margin-top: 4px; word-break: break-word; }
+
+  .table-responsive { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; white-space: nowrap; }
+  th, td { text-align: left; padding: 12px 10px; border-bottom: 1px solid var(--border); }
+  th { color: var(--muted); font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; }
+  tbody tr:hover { background: rgba(150, 150, 150, 0.05); }
+  
+  .badge {
+    background: rgba(37, 99, 235, 0.08);
+    color: var(--accent);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .user-badge {
+    background: rgba(100,  116, 139, 0.12);
+    color: var(--text);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .export-dropdown {
+    position: relative;
+    display: inline-block;
+  }
+
+  .export-content {
+    display: none;
+    position: absolute;
+    right: 0;
+    background-color: var(--card);
+    min-width: 140px;
+    box-shadow: var(--card-shadow);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    z-index: 10;
+    overflow: hidden;
+  }
+
+  .export-content button {
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    color: var(--text);
+    border: none;
+    border-radius: 0;
+    padding: 10px 16px;
+    font-weight: 500;
+  }
+
+  .export-content button:hover {
+    background-color: rgba(150, 150, 150, 0.1);
+  }
+
+  .export-dropdown:hover .export-content {
+    display: block;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <div>
+      <p class="title">BlackWorks - Análise de portas centralizados</p>
+      <p class="subtitle" id="pageSubtitle">Descoberta de topologia Layer 2 via protocolo CDP / LLDP</p>
+    </div>
+
+    <div class="header-actions">
+      <!-- Seletor de Temas -->
+      <div class="theme-selector-container">
+        <label for="themeSelect">🎨 Tema:</label>
+        <select id="themeSelect" onchange="changeTheme(this.value)">
+          <option value="white">White (Claro)</option>
+          <option value="black">Black (Escuro)</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="nav-tabs">
+    <button class="tab-btn active" onclick="setMode('cdp', this)">Protocolo CDP</button>
+    <button class="tab-btn" onclick="setMode('lldp', this)">Protocolo LLDP</button>
+  </div>
+
+  <div class="toolbar">
+    <select id="interfaceSelect"></select>
+    <button class="secondary" id="refreshBtn" title="Recarregar lista de interfaces">&#8635; Interfaces</button>
+    <button id="discoverBtn">Descobrir Porta</button>
+
+    <!-- Botão de Exportar -->
+    <div class="export-dropdown">
+      <button class="secondary">📥 Exportar Dados</button>
+      <div class="export-content">
+        <button onclick="exportHistory('csv')">📄 Como CSV</button>
+        <button onclick="exportHistory('json')">📦 Como JSON</button>
+      </div>
+    </div>
+
+    <button id="clearHistoryBtn" class="danger">Limpar Histórico</button>
+  </div>
+
+  <div class="status-line" id="statusLine"></div>
+
+  <!-- Card do Resultado Atual -->
+  <div class="card" id="resultCard" style="display:none;">
+    <div class="success-label">&#10003; Equipamento Descoberto</div>
+    <div class="device-name" id="resHostname">-</div>
+    <div id="resProtocol" style="color: var(--accent); font-weight: 600;">Protocolo: -</div>
+
+    <div class="details-grid">
+      <div class="detail-card">
+        <div class="detail-label">IP de Gerenciamento</div>
+        <div class="detail-value" id="resIp" style="color: var(--accent);">-</div>
+      </div>
+      <div class="detail-card">
+        <div class="detail-label">Porta Remota</div>
+        <div class="detail-value" id="resPort">-</div>
+      </div>
+      <div class="detail-card">
+        <div class="detail-label">Capacidades (Capabilities)</div>
+        <div class="detail-value" id="resCapabilities">-</div>
+      </div>
+      <div class="detail-card">
+        <div class="detail-label">Velocidade Link</div>
+        <div class="detail-value" id="resSpeed" style="color: var(--success);">-</div>
+      </div>
+      <div class="detail-card">
+        <div class="detail-label">Plataforma / Modelo</div>
+        <div class="detail-value" id="resPlatform">-</div>
+      </div>
+      <div class="detail-card">
+        <div class="detail-label">VLAN Nativa</div>
+        <div class="detail-value" id="resVlan">-</div>
+      </div>
+      <div class="detail-card">
+        <div class="detail-label">Duplex</div>
+        <div class="detail-value" id="resDuplex">-</div>
+      </div>
+      <div class="detail-card">
+        <div class="detail-label">VTP Domain</div>
+        <div class="detail-value" id="resVtp">-</div>
+      </div>
+      <div class="detail-card full-width">
+        <div class="detail-label">Versão do Software (IOS / OS)</div>
+        <div class="detail-value" id="resVersion" style="font-family: monospace; font-size: 12px; font-weight: normal;">-</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabela do Histórico -->
+  <div class="card">
+    <p class="subtitle" style="margin-top:0; margin-bottom: 16px; font-weight: 700; color: var(--text);" id="historyTitle">Histórico de Capturas (CDP)</p>
+    <div class="table-responsive">
+      <table>
+        <thead>
+          <tr>
+            <th>Quando</th>
+            <th>Responsável</th>
+            <th>Interface</th>
+            <th>Hostname</th>
+            <th>IP de Gerenciamento</th>
+            <th>Porta Remota</th>
+            <th>Capacidades</th>
+            <th>Plataforma</th>
+            <th>VLAN</th>
+            <th>Velocidade</th>
+          </tr>
+        </thead>
+        <tbody id="historyBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = "";
+let currentProtocol = "cdp";
+let currentHistoryData = [];
+function changeTheme(themeName) {
+  document.documentElement.setAttribute("data-theme", themeName);
+  localStorage.setItem("blackworks_theme", themeName);
+}
+
+// Inicializa Tema
+const savedTheme = ["white", "black"].includes(localStorage.getItem("blackworks_theme")) ? localStorage.getItem("blackworks_theme") : "white";
+document.getElementById("themeSelect").value = savedTheme;
+changeTheme(savedTheme);
+
+const interfaceSelect = document.getElementById("interfaceSelect");
+const refreshBtn = document.getElementById("refreshBtn");
+const discoverBtn = document.getElementById("discoverBtn");
+const clearHistoryBtn = document.getElementById("clearHistoryBtn");
+const statusLine = document.getElementById("statusLine");
+const resultCard = document.getElementById("resultCard");
+const historyBody = document.getElementById("historyBody");
+const historyTitle = document.getElementById("historyTitle");
+
+async function readApiResponse(response) {
+  const raw = await response.text();
+  let data;
+  try { data = raw ? JSON.parse(raw) : {}; }
+  catch (_) { throw new Error(`Resposta inesperada do servidor (HTTP ${response.status}). Confira se o aplicativo est\u00e1 aberto e tente novamente.`); }
+  if (!response.ok) throw new Error(typeof data.detail === "string" ? data.detail : `Falha na solicita\u00e7\u00e3o (HTTP ${response.status}).`);
+  return data;
+}
+
+function setMode(mode, element) {
+  currentProtocol = mode;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  if (element) element.classList.add('active');
+
+  historyTitle.textContent = `Histórico de Capturas (${currentProtocol.toUpperCase()})`;
+  resultCard.style.display = "none";
+  loadHistory();
+}
+
+async function loadInterfaces() {
+  statusLine.textContent = "Carregando interfaces de rede...";
+  try {
+    const res = await fetch(`${API}/api/interfaces`);
+    const interfaces = await readApiResponse(res);
+    if (!Array.isArray(interfaces)) throw new Error("A lista de interfaces retornada\u00a0\u00e9 inv\u00e1lida.");
+
+    interfaceSelect.innerHTML = "";
+    interfaces.forEach(iface => {
+      const opt = document.createElement("option");
+      opt.value = iface.name;
+      const statusTag = iface.status === "up" ? "conectada" : "desconectada";
+      const speedTag = iface.speed ? ` | ${iface.speed}` : "";
+      opt.textContent = `${iface.name} (${statusTag}${speedTag})`;
+      interfaceSelect.appendChild(opt);
+    });
+
+    statusLine.textContent = interfaces.length
+      ? `${interfaces.length} interface(s) pronta(s).`
+      : "Nenhuma interface encontrada.";
+  } catch (e) {
+    statusLine.textContent = `N\u00e3o foi poss\u00edvel carregar as interfaces: ${e.message}`;
+  }
+}
+
+function fillResult(neighbor) {
+  document.getElementById("resHostname").textContent = neighbor.hostname || neighbor.device_id || "Desconhecido";
+  document.getElementById("resProtocol").textContent = `Protocolo: ${(neighbor.protocol || currentProtocol).toUpperCase()}`;
+  document.getElementById("resIp").textContent = neighbor.ip || neighbor.mgmt_address || "-";
+  document.getElementById("resPort").textContent = neighbor.remote_port || neighbor.port_id || "-";
+  document.getElementById("resCapabilities").textContent = neighbor.capabilities || "-";
+  document.getElementById("resSpeed").textContent = neighbor.link_speed || "-";
+  document.getElementById("resPlatform").textContent = neighbor.platform || "-";
+  document.getElementById("resVlan").textContent = neighbor.native_vlan || "-";
+  document.getElementById("resDuplex").textContent = neighbor.duplex || "-";
+  document.getElementById("resVtp").textContent = neighbor.vtp_domain || "-";
+  document.getElementById("resVersion").textContent = neighbor.software_version || neighbor.version || "-";
+  
+  resultCard.style.display = "block";
+}
+
+async function discover() {
+  const iface = interfaceSelect.value;
+  if (!iface) {
+    statusLine.textContent = "Selecione uma interface primeiro.";
+    return;
+  }
+
+  discoverBtn.disabled = true;
+  statusLine.textContent = `Capturando pacotes ${currentProtocol.toUpperCase()} em ${iface}... (aguardando até 60s)`;
+
+  try {
+    const res = await fetch(`${API}/api/discover`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ 
+        interface: iface, 
+        mode: currentProtocol, 
+        timeout: 60,
+        executed_by: "Tecnico"
+      }),
+    });
+
+    if (!res.ok) {
+      await readApiResponse(res);
+    }
+
+    const neighbor = await readApiResponse(res);
+    fillResult(neighbor);
+    statusLine.textContent = "Descoberta concluída com sucesso.";
+    await loadHistory();
+  } catch (e) {
+    statusLine.textContent = `N\u00e3o foi poss\u00edvel concluir a captura: ${e.message}`;
+  } finally {
+    discoverBtn.disabled = false;
+  }
+}
+
+async function loadHistory() {
+  try {
+    const res = await fetch(`${API}/api/history?mode=${currentProtocol}`);
+    const rows = await readApiResponse(res);
+    if (!Array.isArray(rows)) throw new Error("O hist\u00f3rico retornado\u00a0\u00e9 inv\u00e1lido.");
+    currentHistoryData = rows;
+    historyBody.innerHTML = "";
+
+    if (rows.length === 0) {
+      historyBody.innerHTML = `<tr><td colspan="10" style="text-align:center; color: var(--muted); padding: 16px;">Nenhum registro encontrado para o protocolo ${currentProtocol.toUpperCase()}.</td></tr>`;
+      return;
+    }
+
+    rows.forEach(row => {
+      const tr = document.createElement("tr");
+      const values = [
+        row.timestamp,
+        row.executed_by || "Tecnico",
+        row.interface,
+        row.hostname || row.device_id,
+        row.ip || row.mgmt_address,
+        row.remote_port || row.port_id,
+        row.capabilities,
+        row.platform,
+        row.native_vlan,
+        row.link_speed,
+      ];
+
+      values.forEach((value, index) => {
+        const cell = document.createElement("td");
+        cell.textContent = value == null || value === "" ? "-" : String(value);
+        if (index === 4) cell.classList.add("badge");
+        if (index === 9) {
+          cell.style.color = "var(--success)";
+          cell.style.fontWeight = "600";
+        }
+        tr.appendChild(cell);
+      });
+      historyBody.appendChild(tr);
+    });
+  } catch (e) {
+    statusLine.textContent = `N\u00e3o foi poss\u00edvel carregar o hist\u00f3rico: ${e.message}`;
+  }
+}
+
+async function exportHistory(format) {
+  if (!currentHistoryData || currentHistoryData.length === 0) {
+    alert("Não há dados no histórico para exportar.");
+    return;
+  }
+
+  const dateStr = new Date().toISOString().slice(0, 10);
+  const filename = `historico_${currentProtocol}_${dateStr}.${format}`;
+  let content = "";
+
+  if (format === 'json') {
+    content = JSON.stringify(currentHistoryData, null, 2);
+  } else if (format === 'csv') {
+    const headers = ["Timestamp", "Executado por", "Interface", "Hostname", "IP", "Porta Remota", "Capacidades", "Plataforma", "VLAN", "Velocidade"];
+    
+    const csvRows = [
+      headers.join(';'),
+      ...currentHistoryData.map(row => [
+        `"${row.timestamp || ''}"`,
+        `"${row.executed_by || 'Técnico'}"`,
+        `"${row.interface || ''}"`,
+        `"${row.hostname || row.device_id || ''}"`,
+        `"${row.ip || row.mgmt_address || ''}"`,
+        `"${row.remote_port || row.port_id || ''}"`,
+        `"${row.capabilities || ''}"`,
+        `"${row.platform || ''}"`,
+        `"${row.native_vlan || ''}"`,
+        `"${row.link_speed || ''}"`
+      ].join(';'))
+    ];
+
+    content = csvRows.join('\n');
+  }
+
+  try {
+    statusLine.textContent = "Gerando arquivo e salvando em Downloads...";
+    
+    const res = await fetch(`${API}/api/export`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content, filename, file_type: format })
+    });
+
+    const data = await readApiResponse(res);
+
+    if (data.success) {
+      statusLine.textContent = `✅ Arquivo salvo em Downloads: ${data.path}`;
+    } else {
+      alert("Erro ao exportar arquivo.");
+    }
+  } catch (err) {
+    statusLine.textContent = `N\u00e3o foi poss\u00edvel exportar os dados: ${err.message}`;
+  }
+}
+
+async function clearHistory() {
+  if (!confirm(`Deseja apagar o histórico de ${currentProtocol.toUpperCase()}?`)) return;
+  clearHistoryBtn.disabled = true;
+  try {
+    const res = await fetch(`${API}/api/history?mode=${currentProtocol}`, { method: "DELETE" });
+    await readApiResponse(res);
+    statusLine.textContent = "Hist\u00f3rico removido com sucesso.";
+    await loadHistory();
+  } catch (err) {
+    statusLine.textContent = `N\u00e3o foi poss\u00edvel limpar o hist\u00f3rico: ${err.message}`;
+  } finally { clearHistoryBtn.disabled = false; }
+}
+
+refreshBtn.addEventListener("click", loadInterfaces);
+discoverBtn.addEventListener("click", discover);
+clearHistoryBtn.addEventListener("click", clearHistory);
+
+// Inicialização
+loadInterfaces();
+loadHistory();
+</script>
+</body>
+</html>
